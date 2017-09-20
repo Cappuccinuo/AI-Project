@@ -32,7 +32,7 @@ a state, cost, last action, and reference to the parent node.'
 
 class Node:
 
-    def __init__(self, state, cost = 0, lastAction = None):
+    def __init__(self, state, cost = 0, lastAction = []):
         self.state = state
         self.cost = cost
         self.lastAction = lastAction
@@ -47,37 +47,6 @@ class Node:
         for (successorStates, lastAction, cost) in problem.getSuccessors(self.state):
             expandNodes.append(Node(successorStates, cost, lastAction))
         return expandNodes
-
-    '''
-    def path(self):
-        current = self
-        route = [self]
-        while current.parent:
-            #problem
-            route.append(current.parent)
-            current = current.parent
-        return route
-
-    def directionList(self):
-        route = self.path()
-
-        """
-        game.Directions:
-        {Directions.NORTH: (0, 1),
-        Directions.SOUTH: (0, -1),
-        Directions.EAST:  (1, 0),
-        Directions.WEST:  (-1, 0),
-        Directions.STOP:  (0, 0)}
-        """
-        direction = []
-        for point in route:
-            direction.append(point.lastAction)
-        direction.reverse()
-        """
-        The first action is 'Stop', so skip it.
-        """
-        return direction[1:]
-    '''
 
 class SearchProblem:
     """
@@ -163,34 +132,24 @@ def graphSearch(problem, fringe):
 
     """
     closed = set()
-    parentTable = []
+    path = []
     
     start = problem.getStartState()
-    fringe.push(Node(start, 1, Directions.STOP))
+    fringe.push(Node(start, 0, []))
 
     while not fringe.isEmpty():
         peek = fringe.pop()
         if problem.isGoalState(peek.state):
-            break
+            return peek.lastAction
 
         if peek.state not in closed:
             closed.add(peek.state)
             expandNodes = peek.expand(problem)
             for node in expandNodes:
-                print node.state
-                fringe.push(node)
-                parentTable.append([peek.state, node.state, node.lastAction])
-
-    path = []
-    currentState = peek.stated
-    while currentState != start:
-        for parent in parentTable:
-            if parent[1] == currentState:
-                currentState = parent[0]
-                path.append(parent[2])
-                break
-    path.reverse()
-    return path
+                path = list(peek.lastAction)
+                path.append(node.lastAction)
+                fringe.push(Node(node.state, node.cost, path))
+    return None
 
 def graphSearch_UCS(problem, fringe):
 
@@ -201,41 +160,52 @@ def graphSearch_UCS(problem, fringe):
     -- https://stackoverflow.com/questions/43354715/uniform-cost-search-in-python
     '''
     closed = set()
-
-    parentMap = []
     path = []
 
     start = problem.getStartState()
-    priority = 0
-    node = [problem.getStartState(), problem.getStartState(), 0, None]
-    fringe.update(node, priority)
+    fringe.update(Node(start, 0, []), 0)
 
-    while (not fringe.isEmpty()):
+    while not fringe.isEmpty():
         peek = fringe.pop()
-        parentMap.append([peek[0], peek[1], peek[3]])
+        if problem.isGoalState(peek.state):
+            return peek.lastAction
 
-        if problem.isGoalState(peek[1]):
-            break
+        if peek.state not in closed:
+            closed.add(peek.state)
+            expandNodes = peek.expand(problem)
+            for node in expandNodes:
+                path = list(peek.lastAction)
+                path.append(node.lastAction)
+                cost = problem.getCostOfActions(path)
+                fringe.update(Node(node.state, node.cost, path), cost)
+    return None
 
-        currentState = peek[1]
-        if (currentState not in closed):
-            closed.add(currentState)
-            for node in problem.getSuccessors(currentState):
-                cost = peek[2] + node[2]
-                nextState = node[0]
-                lastAction = node[1]
-                fringe.update([currentState, nextState, cost, lastAction], cost)
+def graphSearch_aStar(problem, fringe, heuristic):
+    closed = set()
+    path = []
 
-    currentState = peek[1]
-    while (currentState != problem.getStartState()):
-        for parentPoint in parentMap:
-            if (parentPoint[1] == currentState):
-                currentState = parentPoint[0]
-                path.insert(0, parentPoint[2])
-                break
-    return path
+    start = problem.getStartState()
+    pathCost = 0
+    heuristicCost = heuristic(start, problem)
+    totalCost = pathCost + heuristicCost
+    fringe.update(Node(start, 0, []), totalCost)
 
+    while not fringe.isEmpty():
+        peek = fringe.pop()
+        if problem.isGoalState(peek.state):
+            return peek.lastAction
 
+        if peek.state not in closed:
+            closed.add(peek.state)
+            expandNodes = peek.expand(problem)
+            for node in expandNodes:
+                path = list(peek.lastAction)
+                path.append(node.lastAction)
+                pathCost = problem.getCostOfActions(path)
+                heuristicCost = heuristic(node.state, problem)
+                totalCost = pathCost + heuristicCost
+                fringe.update(Node(node.state, node.cost, path), totalCost)
+    return None
 
 
 def depthFirstSearch(problem):
@@ -278,7 +248,8 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
+    aStarPath = graphSearch_aStar(problem, PriorityQueue(), heuristic)
+    return aStarPath
     util.raiseNotDefined()
 
 
