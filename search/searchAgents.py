@@ -355,7 +355,7 @@ class CornersProblem(search.SearchProblem):
 
             corners = ()
             if not hitsWall:
-                corners = tuple(position for position in state[1] 
+                corners = tuple(position for position in state[1]
                     if position != (nextx, nexty))
                 successors.append((((nextx, nexty), corners), action, 1))
 
@@ -376,6 +376,20 @@ class CornersProblem(search.SearchProblem):
             if self.walls[x][y]:
                 return 999999
         return len(actions)
+
+    """
+    1. tinyCorners
+    'python pacman.py -l tinyCorners -p SearchAgent -a fn=bfs,
+    prob=CornersProblem'
+    Path found with total cost of 28 in 0.0 seconds
+    Search nodes expanded: 252
+
+    2. mediumCorners
+    'python pacman.py -l mediumCorners -p SearchAgent -a fn=bfs,
+    prob=CornersProblem'
+    Path found with total cost of 106 in 0.0 seconds
+    Search nodes expanded: 1966
+    """
 
 
 def cornersHeuristic(state, problem):
@@ -413,6 +427,13 @@ class AStarCornersAgent(SearchAgent):
         self.searchFunction = lambda prob: search.aStarSearch(
             prob, cornersHeuristic)
         self.searchType = CornersProblem
+
+    """
+    'python pacman.py -l mediumCorners -p AStarCornersAgent -z 0.5'
+    Path found with total cost of 106 in 0.4 seconds
+    Search nodes expanded: 1136
+    """
+###############################################################################
 
 
 class FoodSearchProblem:
@@ -476,6 +497,14 @@ class AStarFoodSearchAgent(SearchAgent):
             prob, foodHeuristic)
         self.searchType = FoodSearchProblem
 
+class UcsFoodSearchAgent(SearchAgent):
+    "A SearchAgent for FoodSearchProblem using ucs(uniform cost search)"
+
+    def __init__(self):
+        self.searchFunction = lambda prob: search.uniformCostSearch(
+            prob)
+        self.searchType = FoodSearchProblem
+
 
 def foodHeuristic(state, problem):
     """
@@ -517,6 +546,52 @@ def foodHeuristic(state, problem):
     return 0
 
 
+    """
+    1. AStarFoodSearchAgent
+    a. trickySearch 
+    'python pacman.py -l trickySearch -p AStarFoodSearchAgent'
+    Path found with total cost of 60 in 53.8 seconds
+    Search nodes expanded: 4137
+
+    b. mediumSearch
+    'python pacman.py -l mediumSearch -p AStarFoodSearchAgent'
+    Cannot solve in a short time.
+
+    c. tinySearch
+    'python pacman.py -l tinySearch -p AStarFoodSearchAgent'
+    Path found with total cost of 27 in 12.0 seconds
+    Search nodes expanded: 2372
+
+    2. UcsFoodSearchAgent
+    'python pacman.py -l trickySearch -p UcsFoodSearchAgent'
+    Path found with total cost of 60 in 63.4 seconds
+    Search nodes expanded: 16688
+    """
+
+
+def mazeDistance(point1, point2, gameState):
+    """
+    Returns the maze distance between any two points, using the search functions
+    you have already built. The gameState can be any game state -- Pacman's
+    position in that state is ignored.
+
+    Example usage: mazeDistance( (2,4), (5,6), gameState)
+
+    This might be a useful helper function for your ApproximateSearchAgent.
+    """
+    x1, y1 = point1
+    x2, y2 = point2
+    walls = gameState.getWalls()
+    assert not walls[x1][y1], 'point1 is a wall: ' + str(point1)
+    assert not walls[x2][y2], 'point2 is a wall: ' + str(point2)
+    prob = PositionSearchProblem(
+        gameState, start=point1, goal=point2, warn=False, visualize=False)
+    return len(search.bfs(prob))
+
+
+###############################################################################
+
+
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
 
@@ -547,9 +622,9 @@ class ClosestDotSearchAgent(SearchAgent):
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        #return search.breadthFirstSearch(problem)
+        # return search.breadthFirstSearch(problem)
         return search.uniformCostSearch(problem)
-        #return search.aStarSearch(problem)
+        # return search.aStarSearch(problem)
 
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -588,25 +663,10 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         foodPosition = self.food.asList()
         for foodPos in foodPosition:
             if foodPos == state:
-                isGoal = True 
+                isGoal = True
         return isGoal
 
-
-def mazeDistance(point1, point2, gameState):
     """
-    Returns the maze distance between any two points, using the search functions
-    you have already built. The gameState can be any game state -- Pacman's
-    position in that state is ignored.
-
-    Example usage: mazeDistance( (2,4), (5,6), gameState)
-
-    This might be a useful helper function for your ApproximateSearchAgent.
+    'python pacman.py -l bigSearch -p ClosestDotSearchAgent -z .5'
+    Path found with cost 350.
     """
-    x1, y1 = point1
-    x2, y2 = point2
-    walls = gameState.getWalls()
-    assert not walls[x1][y1], 'point1 is a wall: ' + str(point1)
-    assert not walls[x2][y2], 'point2 is a wall: ' + str(point2)
-    prob = PositionSearchProblem(
-        gameState, start=point1, goal=point2, warn=False, visualize=False)
-    return len(search.bfs(prob))

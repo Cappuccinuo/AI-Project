@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -30,9 +30,37 @@ Inspired by the CS188 SP14 Lecture 2 -- Uninformed Search
 a state, cost, last action, and reference to the parent node.'
 """
 
+"""
+Node in graph search
+
+REPRESENTATION:
+A node is represented as a class.
+with the following fields:
+    state      : (x, y)    is the node's coordinate
+    cost       : NonNegInt is a defaulted attribute of node
+    lastAction : List      is the last action(s) of expand the node
+
+METHODS:
+    expand : self problem -> expandNodes
+    GIVEN: a state of node, self.state and a problem
+    RETURNS: a list of expanded Nodes
+    EXAMPLES:
+    expandNodes = [Node((2,5), 1, ['NORTH']), Node((2,3), 1, ['SOUTH'])]
+    for node in expandNodes:
+        print "lastAction: ", node.lastAction
+        print "state: ", node.state
+    RESULT:
+    lastAction: NORTH
+    state: (2,5)
+    lastAction: SOUTH
+    state: (2,3)
+"""
+
+
 class Node:
 
-    def __init__(self, state, cost = 0, lastAction = []):
+    def __init__(self, state, cost=0, lastAction=[]):
+        # self.parent omitted
         self.state = state
         self.cost = cost
         self.lastAction = lastAction
@@ -40,13 +68,14 @@ class Node:
     def expand(self, problem):
         expandNodes = []
         """
-        Function problem.getSuccessors: 
+        Function problem.getSuccessors:
         returns a list of triples (successor, action, stepCost)
         Returns successor states, the actions they require, and a cost of 1.
         """
         for (successorStates, lastAction, cost) in problem.getSuccessors(self.state):
             expandNodes.append(Node(successorStates, cost, lastAction))
         return expandNodes
+
 
 class SearchProblem:
     """
@@ -96,26 +125,14 @@ def tinyMazeSearch(problem):
     Returns a sequence of moves that solves tinyMaze.  For any other maze, the
     sequence of moves will be incorrect, so only use this for tinyMaze.
     """
-    from game import Directions
     s = Directions.SOUTH
     w = Directions.WEST
-    return  [s, s, w, s, w, w, s, w]
+    return [s, s, w, s, w, w, s, w]
 
 
+"""
+Pseudocode of Graph-Search
 
-def graphSearch(problem, fringe):
-
-    """
-    graphSearch : problem fringe -> solution || failure
-    GIVEN: a SearchProblem, and a fringe, put certain data into specific kind of data structure(DFS : Stack(), BFS : Queue())
-    RETURNS: a solution, which will be transfered to a list of action, or a failure
-
-    EXAMPLES:
-    graphSearch(problem, Stack()) -> dfsNode (dfsNode.state = (1, 1), dfsNode.cost = 1, dfsNode.lastAction = West)
-
-    DESIGN STATEGY: Use the Pseudocode of Graph-Search
-    Pseudocode:
-    
     function GRAPH-SEARCH(problem, fringe) return a solution, or failure
         closed <- an empty set
         fringe <- INSERT(MAKE-NODE(INITIAL-STATE[problem]), fringe)
@@ -129,11 +146,22 @@ def graphSearch(problem, fringe):
                     fringe <- INSERT(child-node, fringe)
                 end
         end
+"""
 
+
+def graphSearch(problem, fringe):
+    """
+    graphSearch : problem fringe -> solution || failure
+    GIVEN: a SearchProblem, and a fringe, put certain data into specific
+    kind of data structure(DFS : Stack(), BFS : Queue())
+    RETURNS: a list of action, or failure
+
+    EXAMPLES:
+    graphSearch(problem, Stack()) -> dfsNode
+    (dfsNode.state = (1, 1), dfsNode.cost = 1, dfsNode.lastAction = West)
     """
     closed = set()
-    path = []
-    
+
     start = problem.getStartState()
     fringe.push(Node(start, 0, []))
 
@@ -151,16 +179,9 @@ def graphSearch(problem, fringe):
                 fringe.push(Node(node.state, node.cost, path))
     return None
 
-def graphSearch_UCS(problem, fringe):
 
-    '''
-    If you want the parent map, remember that it is only safe to update the parent
-    map when the child is on top of the queue. Only then has the algorithm determined
-    the shortest path to the current node
-    -- https://stackoverflow.com/questions/43354715/uniform-cost-search-in-python
-    '''
+def graphSearch_UCS(problem, fringe):
     closed = set()
-    path = []
 
     start = problem.getStartState()
     fringe.update(Node(start, 0, []), 0)
@@ -177,12 +198,13 @@ def graphSearch_UCS(problem, fringe):
                 path = list(peek.lastAction)
                 path.append(node.lastAction)
                 cost = problem.getCostOfActions(path)
+                # Use the path cost as the priority
                 fringe.update(Node(node.state, node.cost, path), cost)
     return None
 
+
 def graphSearch_aStar(problem, fringe, heuristic):
     closed = set()
-    path = []
 
     start = problem.getStartState()
     pathCost = 0
@@ -225,32 +247,92 @@ def depthFirstSearch(problem):
 
     dfsPath = graphSearch(problem, Stack())
     return dfsPath
-    util.raiseNotDefined()
+
+    """
+    1. tinyMaze
+    'python pacman.py -l tinyMaze -p SearchAgent'
+    Path found with total cost of 10 in 0.0 seconds
+    Search nodes expanded: 15
+    2. mediumMaze
+    'python pacman.py -l mediumMaze -p SearchAgent'
+    Path found with total cost of 130 in 0.0 seconds
+    Search nodes expanded: 146
+    3. bigMaze
+    'python pacman.py -l bigMaze -z .5 -p SearchAgent'
+    Path found with total cost of 210 in 0.0 seconds
+    Search nodes expanded: 390
+    """
+
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     bfsPath = graphSearch(problem, Queue())
     return bfsPath
-    util.raiseNotDefined()
+
+    """
+    1. mediumMaze
+    'python pacman.py -l mediumMaze -p SearchAgent -a fn=bfs'
+    Path found with total cost of 68 in 0.0 seconds
+    Search nodes expanded: 269
+    2. bigMaze
+    'python pacman.py -l bigMaze -p SearchAgent -a fn=bfs -z .5
+    Path found with total cost of 210 in 0.0 seconds
+    Search nodes expanded: 620'
+    """
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
+    """
+    # Uniform Cost Search is A* Search with nullHeuristic
+    heuristic = nullHeuristic
+    ucsPath = graphSearch_aStar(problem, PriorityQueue(), heuristic)
+    """
     ucsPath = graphSearch_UCS(problem, PriorityQueue())
     return ucsPath
-    util.raiseNotDefined()
+
+    """
+    1. mediumMaze:
+    'python pacman.py -l mediumMaze -p SearchAgent -a fn=ucs'
+    Path found with total cost of 68 in 0.1 seconds
+    Search nodes expanded: 269
+
+    2. mediumDottedMaze:
+    'python pacman.py -l mediumDottedMaze -p StayEastSearchAgent'
+    Path found with total cost of 1 in 0.0 seconds
+    StayEastSearchAgent : costFn = lambda pos: .5 ** pos[0]
+    Search nodes expanded: 186
+
+	3. mediumScaryMaze:
+	'python pacman.py -l mediumScaryMaze -p StayWestSearchAgent'
+	Path found with total cost of 68719479864 in 0.0 seconds
+	StayWestSearchAgent : costFn = lambda pos: 2 ** pos[0]
+    Search nodes expanded: 108
+    """
+
 
 def nullHeuristic(state, problem=None):
     """
-    A heuristic function estimates the cost from the current state to the nearest
-    goal in the provided SearchProblem.  This heuristic is trivial.
+    A heuristic function estimates the cost from the current state to the
+    nearest goal in the provided SearchProblem.  This heuristic is trivial.
     """
     return 0
 
+
 def aStarSearch(problem, heuristic=nullHeuristic):
-    """Search the node that has the lowest combined cost and heuristic first."""
+    """
+    Search the node that has the lowest combined cost and heuristic first.
+    """
     aStarPath = graphSearch_aStar(problem, PriorityQueue(), heuristic)
     return aStarPath
-    util.raiseNotDefined()
+
+    """
+    Use manhattanHeuristic:
+    'python pacman.py -l bigMaze -z .5 -p SearchAgent -a
+    fn=astar, heuristic=manhattanHeuristic'
+    Result:
+    Path found with total cost of 210 in 0.2 seconds
+    Search nodes expanded: 549
+    """
 
 
 # Abbreviations
