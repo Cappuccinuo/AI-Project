@@ -540,6 +540,33 @@ class UcsFoodSearchAgent(SearchAgent):
             prob)
         self.searchType = FoodSearchProblem
 
+"""
+def closeFoodDis(currentPosition, foodList, problem):
+    if len(foodList) == 0:
+        return None
+    closeDis = 999999
+    gameState = problem.startingGameState
+    for food in foodList:
+        foodAndPositionDis = mazeDistance(food, currentPosition, gameState)
+        if foodAndPositionDis < closeDis:
+            closeDis = foodAndPositionDis
+    return closeDis
+
+
+def farFoodDis(foodList, problem):
+    if len(foodList) == 0:
+        return None
+    farDis = 0
+    gameState = problem.startingGameState
+    for foodA in foodList:
+        for foodB in foodList:
+            closeAndFarDis = mazeDistance(foodA, foodB, gameState)
+            if closeAndFarDis > farDis:
+                farDis = closeAndFarDis
+                foodCombo = tuple(foodA, foodB)
+    return tuple(foodCombo, farDis)
+"""        
+
 
 def foodHeuristic(state, problem):
     """
@@ -569,23 +596,54 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
-    position, foodGrid = state
+
+
+    """
+    foodHeuristic = closeDisBetweenPosFood + farDisBetweenFoods
+    closeDisBetweenPosFood: the real distance from current Pacman position
+    to the closer one of foods
+    farDisBetweenFoods    : the real distance between two furthest foods
+    in the maze
+    INTERP:
+    either way, you will have to travel farDisBetweenFoods, at least at the
+    end, and it is better to collect the food that is near to you so you do
+    not have to go back
+    """
+    currentPosition, foodGrid = state
+    if problem.isGoalState(state):
+        return 0
 
     foodPositions = foodGrid.asList()
-    positionToFoodDistance = []
-    for foodPos in foodPositions:
-        positionToFoodDistance.append(mazeDistance(state[0], foodPos, problem.startingGameState))
-    if foodGrid.asList():
-        return min(positionToFoodDistance)
-    return 0
+    if len(foodPositions) == 0:
+        return None
+
+    farDisBetweenFoods = 0
+    gameState = problem.startingGameState
+
+    for foodA in foodPositions:
+        for foodB in foodPositions:
+            disBetweenFoods = mazeDistance(foodA, foodB, gameState)
+            if disBetweenFoods > farDisBetweenFoods:
+                farDisBetweenFoods = disBetweenFoods
+
+    closeDisBetweenPosFood = 999999
+
+    for food in foodPositions:
+        foodAndPositionDis = mazeDistance(food, currentPosition, gameState)
+        if foodAndPositionDis < closeDisBetweenPosFood:
+            closeDisBetweenPosFood = foodAndPositionDis
+
+    foodHeuristic = closeDisBetweenPosFood + farDisBetweenFoods
+    return foodHeuristic
+
 
 
     """
     1. AStarFoodSearchAgent
     a. trickySearch 
     'python pacman.py -l trickySearch -p AStarFoodSearchAgent'
-    Path found with total cost of 60 in 53.8 seconds
-    Search nodes expanded: 4137
+    Path found with total cost of 60 in 70.5 seconds
+    Search nodes expanded: 719
 
     b. mediumSearch
     'python pacman.py -l mediumSearch -p AStarFoodSearchAgent'
@@ -593,12 +651,12 @@ def foodHeuristic(state, problem):
 
     c. tinySearch
     'python pacman.py -l tinySearch -p AStarFoodSearchAgent'
-    Path found with total cost of 27 in 12.0 seconds
-    Search nodes expanded: 2372
+    Path found with total cost of 27 in 20.5 seconds
+    Search nodes expanded: 911
 
     2. UcsFoodSearchAgent
     'python pacman.py -l trickySearch -p UcsFoodSearchAgent'
-    Path found with total cost of 60 in 63.4 seconds
+    Path found with total cost of 60 in 61.8 seconds
     Search nodes expanded: 16688
     """
 
