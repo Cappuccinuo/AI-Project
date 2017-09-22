@@ -316,17 +316,24 @@ class CornersProblem(search.SearchProblem):
         """
         Returns the start state (in your state space, not the full Pacman state
         space)
+        Using a for loop, how do I access the loop index, from 1 to 5 in this case?
+        https://stackoverflow.com/questions/522563/accessing-the-index-in-python-for-loops
+        Use enumerate:
+        for index, item in enumerate(items):
+        print(index, item)
         """
-        return (self.startingPosition, self.corners)
+        is_corner_eaten = [False, False, False, False]
+        for index, corner in enumerate(self.corners):
+            if self.startingPosition == corner:
+                is_corner_eaten[index] = True
+        return (self.startingPosition, tuple(is_corner_eaten))
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
-        allEaten = True
-        if (len(state[1]) == 0):
-            return allEaten
-        return not allEaten
+        currentPosition, is_corner_eaten = state
+        return is_corner_eaten == (True, True, True, True)
 
     def getSuccessors(self, state):
         """
@@ -347,17 +354,19 @@ class CornersProblem(search.SearchProblem):
             #   dx, dy = Actions.directionToVector(action)
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
-
-            x, y = state[0]
+            currentPosition, is_corner_eaten = state
+            x, y = currentPosition
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
             hitsWall = self.walls[nextx][nexty]
 
-            corners = ()
             if not hitsWall:
-                corners = tuple(position for position in state[1]
-                    if position != (nextx, nexty))
-                successors.append((((nextx, nexty), corners), action, 1))
+                for index, corner in enumerate(self.corners):
+                    if (nextx, nexty) == corner:
+                        update = list(is_corner_eaten)
+                        update[index] = True
+                        is_corner_eaten = tuple(update)
+                successors.append((((nextx, nexty), is_corner_eaten), action, 1))
 
         self._expanded += 1  # DO NOT CHANGE
         return successors
@@ -408,16 +417,42 @@ def cornersHeuristic(state, problem):
     corners = problem.corners  # These are the corner coordinates
     # These are the walls of the maze, as a Grid (game.py)
     walls = problem.walls
-    '''
+    """
     A heuristic h is admissible (optimistic) if:
           0 <= h(n) <= h*(n)
     where h*(n) is the true cost to a nearest goal
 
-    '''
-    goalToStateDistance = [0]
-    for position in state[1]:
-        goalToStateDistance.append(manhattanDistance(state[0], position))
-    return max(goalToStateDistance)  # Default to trivial solution
+    List out the unvisited corners and compute the Manhattan distance to each
+    of them. Then select the corner with minimum manhattan distance. Note down
+    the distance, this is the minimum number of steps needed to reach the corner
+    irrespective of maze. Update the current position of pacman to this corner.
+    Remove this corner from the unvisited corners list. Loop over until the unvisited
+    corners is empty. The sum of these distances will be an Admissible and Consistent 
+    Heuristic. 
+    """
+
+    if problem.isGoalState(state):
+        return 0
+    currentPosition, is_corner_eaten = state
+    lower_bound = 999999
+    manhattanDis = 999999
+    for index, corner in enumerate(corners):
+        if is_corner_eaten[index] == False:
+            distance = manhattanDistance(currentPosition, corner)
+            if distance < manhattanDis:
+                manhattanDis = distance
+                flag = index
+
+    for index in range(4):
+        if is_corner_eaten[index] == False:
+            manhattanDis = manhattanDistance(currentPosition, corners[flag])
+            update = list(is_corner_eaten)
+            update[flag] = True
+            remaining_corner = tuple(update)
+            state_after_visit = (corners[flag], remaining_corner)
+            heuristic_after_visit = cornersHeuristic(state_after_visit, problem)
+            lower_bound = min(lower_bound, manhattanDis + heuristic_after_visit)
+    return lower_bound
 
 
 class AStarCornersAgent(SearchAgent):
@@ -430,8 +465,8 @@ class AStarCornersAgent(SearchAgent):
 
     """
     'python pacman.py -l mediumCorners -p AStarCornersAgent -z 0.5'
-    Path found with total cost of 106 in 0.4 seconds
-    Search nodes expanded: 1136
+    Path found with total cost of 106 in 0.3 seconds
+    Search nodes expanded: 692
     """
 ###############################################################################
 
@@ -539,10 +574,9 @@ def foodHeuristic(state, problem):
     foodPositions = foodGrid.asList()
     positionToFoodDistance = []
     for foodPos in foodPositions:
-        #positionToFoodDistance.append(manhattanDistance(state[0], foodPos))   3/5
         positionToFoodDistance.append(mazeDistance(state[0], foodPos, problem.startingGameState))
     if foodGrid.asList():
-        return max(positionToFoodDistance)
+        return min(positionToFoodDistance)
     return 0
 
 
