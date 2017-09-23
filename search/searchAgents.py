@@ -429,6 +429,14 @@ def cornersHeuristic(state, problem):
     Remove this corner from the unvisited corners list. Loop over until the unvisited
     corners is empty. The sum of these distances will be an Admissible and Consistent 
     Heuristic. 
+
+    DATA DEFINITIONS:
+    manhattanDis : the variable is first used to make comparison with all the corner 
+    distance to currentPosition, then used to keep the distance between currentPosition 
+    and corners
+    flag : record the closet corner's index
+    uodate : the list being updated after one corner is visited
+    lower_bound : result of the function
     """
 
     if problem.isGoalState(state):
@@ -714,8 +722,8 @@ class ClosestDotSearchAgent(SearchAgent):
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        # return search.breadthFirstSearch(problem)
-        return search.uniformCostSearch(problem)
+        return search.breadthFirstSearch(problem)
+        # return search.uniformCostSearch(problem)
         # return search.aStarSearch(problem)
 
 
