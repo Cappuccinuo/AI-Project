@@ -78,16 +78,7 @@ class ReflexAgent(Agent):
 
         newGhostPositions = successorGameState.getGhostPositions()
         minDistanceToGhost = float('inf')
-        """
-        for ghostState in newGhostStates:
-            if ghostState.scaredTimer == 0:
-                ghostPos = ghostState[0]
-                if ghostPos:
-                  distanceToGhost = manhattanDistance(newPos, ghostPos)
-                  if distanceToGhost > 0:
-                      if distanceToGhost < minDistanceToGhost:
-                          minDistanceToGhost = distanceToGhost
-                    """
+
         for ghostPos in newGhostPositions:
             distanceToGhost = manhattanDistance(newPos, ghostPos)
             if distanceToGhost > 0:
@@ -102,9 +93,7 @@ class ReflexAgent(Agent):
             if distanceToFood < minDistanceToFood:
               minDistanceToFood = distanceToFood
 
-        totalScaredTime = sum(newScaredTimes)
-
-        heuristic = successorGameState.getScore() + foodScore / minDistanceToFood - foodScore / minDistanceToGhost + totalScaredTime
+        heuristic = successorGameState.getScore() + foodScore / minDistanceToFood - foodScore / minDistanceToGhost
         return heuristic
 
 def scoreEvaluationFunction(currentGameState):
@@ -136,6 +125,15 @@ class MultiAgentSearchAgent(Agent):
         self.index = 0 # Pacman is always agent index 0
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
+
+    def isTerminal(self, state, depth):
+        return self.depth == depth or state.isWin() or state.isLose()
+
+    def isPacman(self, agentIndex):
+        return agentIndex == 0
+
+    def isNextDepth(self, state, agentIndex):
+        return agentIndex == state.getNumAgents()
 
 
 class MinimaxAgent(MultiAgentSearchAgent):
@@ -169,19 +167,18 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         
         def minimax(state, depth, agentIndex):
-            if depth == self.depth or state.isWin() or state.isLose():
+            if self.isTerminal(state, depth):
                 return self.evaluationFunction(state)
 
-            if agentIndex == state.getNumAgents():  
+            if self.isNextDepth(state, agentIndex):  
                 return minimax(state, depth + 1, 0)  
 
             actions = state.getLegalActions(agentIndex)
             results = [
                 minimax(state.generateSuccessor(agentIndex, action), depth, agentIndex + 1)
-                for action in actions
-            ]
+                for action in actions]
             
-            if agentIndex == 0:
+            if self.isPacman(agentIndex):
                 return max(results)
             else:
                 return min(results)
@@ -209,13 +206,13 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         
         def prune(state, depth, agentIndex, A=float("-inf"), B=float("inf")):
-            if depth == self.depth or state.isWin() or state.isLose():
+            if self.isTerminal(state, depth):
                 return self.evaluationFunction(state), None
 
-            if agentIndex == state.getNumAgents():
+            if self.isNextDepth(state, agentIndex):
                 return prune(state, depth + 1, 0, A, B)
 
-            if agentIndex == 0:
+            if self.isPacman(agentIndex):
                 best_score = float("-inf")
             else:
                 best_score = float("inf")
@@ -224,10 +221,10 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             actions = state.getLegalActions(agentIndex)
             for action in actions:
                 successor = state.generateSuccessor(agentIndex, action)
-                score,_ = prune(successor, depth, agentIndex + 1, A, B)
+                score, move = prune(successor, depth, agentIndex + 1, A, B)
                 best_score, best_move = (max if agentIndex == 0 else min)((best_score, best_move), (score, action))
 
-                if agentIndex == 0:
+                if (self.isPacman(agentIndex)):
                     if best_score > B:
                         return best_score, best_move
                     A = max(A, best_score)
@@ -237,7 +234,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     B = min(B, best_score)
             return best_score, best_move
 
-        _,move = prune(gameState, 0, 0)
+        score, move = prune(gameState, 0, 0)
         return move
         
 
@@ -255,10 +252,10 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         def expectimax(state, depth, agentIndex):
-            if depth == self.depth or state.isWin() or state.isLose():
+            if self.isTerminal(state, depth):
                 return self.evaluationFunction(state)
 
-            if agentIndex == state.getNumAgents():
+            if self.isNextDepth(state, agentIndex):
                 return expectimax(state, depth + 1, 0)
 
             actions = state.getLegalActions(agentIndex)
@@ -267,10 +264,10 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 for action in actions
             ]
             
-            if agentIndex == 0:
+            if (self.isPacman(agentIndex)):
                 return max(results)
             else:
-                return sum(results) * 1.0 /len(results)
+                return sum(results) * 1.0 / len(results)
 
         pacmanActions = gameState.getLegalActions(0)
         best_score = float("-inf")
@@ -291,9 +288,9 @@ def betterEvaluationFunction(currentGameState):
 
       DESCRIPTION: <write something here so we know what you did>
 
-      distance to the cloest active ghost
-      distance to the cloest scared ghost
-      distance to the cloest food
+      distance to the closest active ghost
+      distance to the closest scared ghost
+      distance to the closest food
       number of foods left
       number of capsules left
     """
@@ -343,10 +340,8 @@ def betterEvaluationFunction(currentGameState):
                 minDisToTerrorGhost = distanceToTerroGhost
 
 
-    score = currentScore + 10 / minDisToFood - 20 / minDisToTerrorGhost - 200 * minDisToScaredGhost - 100 * numOfCapsulesLeft - 25 * numOfFoodLeft
+    score = currentScore + 10.0 / minDisToFood - 20.0 / minDisToTerrorGhost - 200 * minDisToScaredGhost - 100 * numOfCapsulesLeft - 25 * numOfFoodLeft
     return score
-
-
 
 
 # Abbreviation
