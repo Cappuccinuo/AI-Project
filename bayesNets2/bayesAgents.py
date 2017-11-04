@@ -250,14 +250,18 @@ def getAdjacentHouseVal(gameState, adjacentHousePos):
     bottomLeftPos, topLeftPos, bottomRightPos, topRightPos = gameState.getPossibleHouses()
     if adjacentHousePos == bottomLeftPos:
         return BOTTOM_LEFT_VAL
-    elif adjacentHousePos == topLeftPos:
+    if adjacentHousePos == topLeftPos:
         return TOP_LEFT_VAL
-    elif adjacentHousePos == bottomRightPos:
+    if adjacentHousePos == bottomRightPos:
         return BOTTOM_RIGHT_VAL
-    elif adjacentHousePos == topRightPos:
+    if adjacentHousePos == topRightPos:
         return TOP_RIGHT_VAL
 
 def getObsProb(adjacentHouseVal, foodHouseVal, ghostHouseVal, wall):
+    """ 
+    The observation CPT needs to be a proper distribution for every possible set of parents.
+    When food house and ghost house assigned to the same position, use the food house distribution
+    """
     prob = 0
     if adjacentHouseVal != ghostHouseVal and adjacentHouseVal != foodHouseVal:
         if wall == RED_OBS_VAL:
@@ -266,11 +270,6 @@ def getObsProb(adjacentHouseVal, foodHouseVal, ghostHouseVal, wall):
             prob = 0
         elif wall == NO_OBS_VAL:
             prob = 1
-
-    """ 
-    The observation CPT needs to be a proper distribution for every possible set of parents.
-    When food house and ghost house assigned to the same position, use the food house distribution
-    """
     elif adjacentHouseVal == foodHouseVal or foodHouseVal == ghostHouseVal:
         if wall == RED_OBS_VAL:
             prob = PROB_FOOD_RED

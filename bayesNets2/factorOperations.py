@@ -101,7 +101,44 @@ def joinFactors(factors):
 
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    unconditionedVars = []
+    conditionedVars = []
+    varDomainsDict = {}
+
+    if factors:
+        varDomainsDict = factors[0].variableDomainsDict()
+
+    for factor in factors:
+        uncondVar = factor.unconditionedVariables()
+        unconditionedVars += uncondVar
+        for condVar in factor.conditionedVariables():
+            if condVar not in conditionedVars:
+                conditionedVars.append(condVar)
+
+    # not workable
+    # for conditionedVar in conditionedVars:
+    #     if conditionedVar in unconditionedVars:
+    #         conditionedVars.remove(conditionedVar)
+    
+    # workable 
+    
+    tempCondVars = conditionedVars[:]
+    for conditionedVar in conditionedVars:
+        if conditionedVar in unconditionedVars:
+            tempCondVars.remove(conditionedVar)
+    conditionedVars = tempCondVars
+
+    # workable
+    # conditionedVars = [condVar for condVar in conditionedVars if condVar not in unconditionedVars]
+
+    newFactor = Factor(unconditionedVars, conditionedVars, varDomainsDict)
+    for assignment in newFactor.getAllPossibleAssignmentDicts():
+        prob = 1
+        for factor in factors:
+            prob *= factor.getProbability(assignment)
+        newFactor.setProbability(assignment, prob)
+
+    return newFactor
 
 
 def eliminateWithCallTracking(callTrackingList=None):
@@ -150,8 +187,29 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        varDomainsDict = factor.variableDomainsDict()
+        eliminateVals = varDomainsDict[eliminationVariable]
+        unconditionedVars = []
+        conditionedVars = []
 
+        unconditionedVars += factor.unconditionedVariables()
+        uncondVars = unconditionedVars[:]
+        for uncondVar in unconditionedVars:
+            if uncondVar == eliminationVariable:
+                uncondVars.remove(uncondVar)
+        unconditionedVars = uncondVars
+        
+        conditionedVars += factor.conditionedVariables()
+
+        newFactor = Factor(unconditionedVars, conditionedVars, varDomainsDict)
+        for assignment in newFactor.getAllPossibleAssignmentDicts():
+            prob = 0
+            for eliminateVal in eliminateVals:
+                assignment[eliminationVariable] = eliminateVal
+                prob += factor.getProbability(assignment)
+                print prob
+            newFactor.setProbability(assignment, prob)
+        return newFactor        
     return eliminate
 
 eliminate = eliminateWithCallTracking()
