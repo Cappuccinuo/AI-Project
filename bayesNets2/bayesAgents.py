@@ -224,6 +224,7 @@ def fillObsCPT(bayesNet, gameState):
     for housePos in gameState.getPossibleHouses():
         for obsPos in gameState.getHouseWalls(housePos):
             obsVar = OBS_VAR_TEMPLATE % obsPos
+            print obsVar
             obsFactor = bn.Factor([obsVar], [FOOD_HOUSE_VAR, GHOST_HOUSE_VAR], bayesNet.variableDomainsDict())
             for assignment in obsFactor.getAllPossibleAssignmentDicts():
                 foodHouseVal = assignment[FOOD_HOUSE_VAR]
@@ -301,7 +302,16 @@ def getMostLikelyFoodHousePosition(evidence, bayesNet, eliminationOrder):
     (This should be a very short method.)
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    factor = inference.inferenceByVariableElimination(bayesNet, FOOD_HOUSE_VAR, evidence, eliminationOrder)
+    mostLikeHouse = None
+    mostProb = 0
+    for assignment in factor.getAllPossibleAssignmentDicts():
+        prob = factor.getProbability(assignment)
+        if prob > mostProb:
+            mostProb = prob
+            mostLikeHouse = assignment
+    return mostLikeHouse
 
 
 class BayesAgent(game.Agent):
@@ -403,7 +413,22 @@ class VPIAgent(BayesAgent):
         rightExpectedValue = 0
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        factor = inference.inferenceByVariableElimination(self.bayesNet, FOOD_HOUSE_VAR, evidence, eliminationOrder)
+        pFoodLeft = 0
+        pFoodRight = 0
+
+        for assignment in factor.getAllPossibleAssignmentDicts():
+            if assignment[FOOD_HOUSE_VAR] == TOP_LEFT_VAL and assignment[GHOST_HOUSE_VAR] == TOP_RIGHT_VAL:
+                pFoodLeft = factor.getProbability(assignment)
+            elif assignment[GHOST_HOUSE_VAR] == TOP_LEFT_VAL and assignment[FOOD_HOUSE_VAR] == TOP_RIGHT_VAL:
+                pFoodRight = factor.getProbability(assignment)
+
+        pGhostRight = 1 - pFoodLeft
+        pGhostLeft = 1 - pFoodRight
+
+        # Utilities
+        leftExpectedValue = pFoodLeft * WON_GAME_REWARD + pGhostRight * GHOST_COLLISION_REWARD
+        rightExpectedValue = pFoodRight * WON_GAME_REWARD + pGhostLeft * GHOST_COLLISION_REWARD
 
         return leftExpectedValue, rightExpectedValue
 
@@ -469,7 +494,12 @@ class VPIAgent(BayesAgent):
         expectedValue = 0
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        for prob, explorationEvidence in self.getExplorationProbsAndOutcomes(evidence):
+            new_evidence = evidence.copy()
+            new_evidence.update(explorationEvidence)
+            leftExpectedValue, rightExpectedValue = self.computeEnterValues(new_evidence, enterEliminationOrder)
+            maxExpectedEnterVal = max(leftExpectedValue, rightExpectedValue)
+            expectedValue += maxExpectedEnterVal * prob
 
         return expectedValue
 

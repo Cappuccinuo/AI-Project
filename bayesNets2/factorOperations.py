@@ -101,6 +101,7 @@ def joinFactors(factors):
 
 
     "*** YOUR CODE HERE ***"
+    # P(L|T) * P(T) -> P(L, T)
     unconditionedVars = []
     conditionedVars = []
     varDomainsDict = {}
@@ -187,6 +188,7 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
+        # P(T, L) -> P(L)
         varDomainsDict = factor.variableDomainsDict()
         eliminateVals = varDomainsDict[eliminationVariable]
         unconditionedVars = []
@@ -263,5 +265,28 @@ def normalize(factor):
                             str(factor))
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # P(A, B) -> P(B|A)
+    unconditionedVars = []
+    conditionedVars = []
+    unconditionedVars += factor.unconditionedVariables()
+    conditionedVars += factor.conditionedVariables()
 
+    prob_sum = 0
+    for assignment in factor.getAllPossibleAssignmentDicts():
+        prob_sum += factor.getProbability(assignment)
+    if prob_sum == 0:
+        return None
+
+    tempUncondVars = unconditionedVars[:]
+    for unconditionedVar in unconditionedVars:
+        if len(variableDomainsDict[unconditionedVar]) == 1:
+            conditionedVars.append(unconditionedVar)
+        if unconditionedVar in conditionedVars:
+            tempUncondVars.remove(unconditionedVar)
+    unconditionedVars = tempUncondVars
+
+    newFactor = Factor(unconditionedVars, conditionedVars, variableDomainsDict)
+    for assignment in newFactor.getAllPossibleAssignmentDicts():
+        prob = factor.getProbability(assignment)
+        newFactor.setProbability(assignment, prob / prob_sum)
+    return newFactor
